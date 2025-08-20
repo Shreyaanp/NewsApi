@@ -1,7 +1,9 @@
+# app/reach.py
 from typing import List, Tuple
 import asyncio
 from sklearn.cluster import AgglomerativeClustering
 from sentence_transformers import SentenceTransformer
+import torch
 
 from .models import Article, ReachCluster
 
@@ -11,9 +13,11 @@ _model: SentenceTransformer | None = None
 async def get_or_load_similarity_model() -> SentenceTransformer:
     global _model
     if _model is None:
-        # load once; thread-safe enough for single-process Uvicorn
-        _model = SentenceTransformer(device='cuda' if __import__('torch').cuda.is_available() else 'cpu', 
-            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
+        # load once; CUDA if available
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        _model = SentenceTransformer(
+            "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2",
+            device=device
         )
     return _model
 
@@ -63,12 +67,3 @@ async def cluster_with_labels(
 
     clusters.sort(key=lambda c: c.size, reverse=True)
     return clusters, clustering.labels_.tolist()
-
-# Legacy wrapper (keeps old signature working) ──────────
-async def reach_clusters(
-    articles: List[Article],
-    threshold: float = 0.6,
-    top: int | None = None,
-) -> List[ReachCluster]:
-    clusters, _ = await cluster_with_labels(articles, distance_threshold=threshold)
-    return clusters[:top] if top else clusters
