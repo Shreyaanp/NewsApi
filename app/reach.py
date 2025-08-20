@@ -12,7 +12,7 @@ async def get_or_load_similarity_model() -> SentenceTransformer:
     global _model
     if _model is None:
         # load once; thread-safe enough for single-process Uvicorn
-        _model = SentenceTransformer(
+        _model = SentenceTransformer(device='cuda' if __import__('torch').cuda.is_available() else 'cpu', 
             "sentence-transformers/paraphrase-multilingual-MiniLM-L12-v2"
         )
     return _model
