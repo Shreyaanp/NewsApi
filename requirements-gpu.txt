@@ -1,0 +1,17 @@
+fastapi
+uvicorn[standard]
+aiohttp
+aiocache
+feedparser
+python-dateutil
+numpy
+scikit-learn
+sentence-transformers
+transformers
+--extra-index-url https://download.pytorch.org/whl/cu118
+torch>=2.2
+pydantic[email]
+motor
+pymongo
+python-multipart
+redis
