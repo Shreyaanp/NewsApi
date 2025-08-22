@@ -151,6 +151,8 @@ GET /articles - Get articles with pagination and filtering
 
 ?source=cnn - Filter by source
 
+GET /articles/source/{source} - Fetch articles for a given source with full details
+
 Analytics Endpoints
 GET /analytics/sentiment - Overall sentiment summary
 
