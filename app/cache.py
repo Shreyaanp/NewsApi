@@ -220,6 +220,35 @@ async def cache_clusters(key: str, clusters: list, ttl: Optional[int] = None) ->
     """Cache clustering results"""
     return await cache_manager.set(f"clusters:{key}", clusters, ttl, clusters_cache)
 
+
+async def get_all_cached_data() -> dict:
+    """Retrieve all key-value pairs from every configured cache"""
+    all_data: dict[str, dict] = {}
+    for name in ["default", "articles", "sentiment", "clusters"]:
+        try:
+            cache = caches.get(name)
+        except Exception as e:  # pragma: no cover - defensive
+            logger.error(f"Failed to get cache {name}: {e}")
+            continue
+        try:
+            try:
+                keys = await cache.raw("keys", "*")
+            except TypeError:  # SimpleMemoryCache doesn't accept pattern
+                keys = await cache.raw("keys")
+        except Exception as e:  # pragma: no cover - defensive
+            logger.error(f"Failed to list keys for cache {name}: {e}")
+            continue
+        cache_content = {}
+        for key in keys or []:
+            if isinstance(key, bytes):
+                key = key.decode()
+            try:
+                cache_content[key] = await cache.get(key)
+            except Exception as e:  # pragma: no cover - defensive
+                logger.error(f"Failed to retrieve {key} from {name}: {e}")
+        all_data[name] = cache_content
+    return all_data
+
 async def cache_health_check() -> dict:
     """Perform cache health check"""
     try:
