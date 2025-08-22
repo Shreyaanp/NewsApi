@@ -38,6 +38,9 @@ Health checks: Detailed health monitoring endpoints
 
 Background tasks: Automatic feed updates
 
+4. Richer Clustering (reach.py)
+Description-aware embeddings for clustering and similarity scoring for each cluster
+
 API improvements: Better pagination, filtering, and response models
 
 4. Advanced Sentiment Analysis (sentiment.py)
@@ -151,7 +154,9 @@ GET /articles - Get articles with pagination and filtering
 Analytics Endpoints
 GET /analytics/sentiment - Overall sentiment summary
 
-GET /analytics/reach - Content clustering analysis
+GET /analytics/sentiment/hourly - Hourly sentiment counts for recent articles
+
+GET /analytics/reach - Content clustering analysis with similarity scores
 
 GET /analytics/trend - Trend analysis with ratios
 

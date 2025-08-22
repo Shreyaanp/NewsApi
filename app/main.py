@@ -39,7 +39,11 @@ from .models import (
 )
 from .news_fetcher import get_articles, periodic_feed_update
 from .reach import cluster_with_labels, get_or_load_similarity_model
-from .sentiment import get_or_load_sentiment_model, sentiment_counts
+from .sentiment import (
+    get_or_load_sentiment_model,
+    sentiment_counts,
+    get_sentiment_trends,
+)
 
 # ──────────────────────────────────────────────────────────────────────────
 # Logging
@@ -217,6 +221,15 @@ async def list_articles(
 @app.get("/analytics/sentiment", response_model=SentimentSummary, tags=["analytics"])
 async def sentiment_endpoint(articles: List[Article] = Depends(_articles_dep)):
     return await sentiment_counts(articles, ml_models["sentiment"])
+
+
+@app.get("/analytics/sentiment/hourly", tags=["analytics"])
+async def sentiment_hourly_endpoint(
+    hours: int = Query(24, ge=1, le=168),
+    articles: List[Article] = Depends(_articles_dep),
+):
+    """Return sentiment counts grouped by hour for the last ``hours`` period."""
+    return await get_sentiment_trends(articles, time_window_hours=hours)
 
 
 @app.get("/analytics/reach", response_model=List[ReachCluster], tags=["analytics"])
