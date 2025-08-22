@@ -218,6 +218,18 @@ async def list_articles(
     return articles[offset : offset + limit]
 
 
+@app.get("/articles/source/{source}", response_model=List[Article], tags=["content"])
+async def list_articles_by_source(
+    source: str,
+    limit: int = Query(100, ge=1, le=1000),
+    offset: int = Query(0, ge=0),
+    articles: List[Article] = Depends(_articles_dep),
+):
+    """Return articles from a specific source."""
+    filtered = [a for a in articles if source.lower() in a.source.lower()]
+    return filtered[offset : offset + limit]
+
+
 @app.get("/analytics/sentiment", response_model=SentimentSummary, tags=["analytics"])
 async def sentiment_endpoint(articles: List[Article] = Depends(_articles_dep)):
     return await sentiment_counts(articles, ml_models["sentiment"])
