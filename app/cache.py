@@ -220,6 +220,61 @@ async def cache_clusters(key: str, clusters: list, ttl: Optional[int] = None) ->
     """Cache clustering results"""
     return await cache_manager.set(f"clusters:{key}", clusters, ttl, clusters_cache)
 
+
+async def get_all_cached_data() -> dict:
+    """Retrieve all key-value pairs from every configured cache.
+
+    Uses batch lookups where possible to minimise round trips and falls back to
+    concurrent per-key retrieval when ``multi_get`` isn't supported. Each cache
+    is also processed concurrently for better overall throughput.
+    """
+
+    async def fetch_cache(name: str) -> tuple[str, dict]:
+        """Fetch all key/value pairs for a single cache."""
+        try:
+            cache = caches.get(name)
+        except Exception as e:  # pragma: no cover - defensive
+            logger.error(f"Failed to get cache {name}: {e}")
+            return name, {}
+
+        try:
+            try:
+                keys = await cache.raw("keys", "*")
+            except TypeError:  # SimpleMemoryCache doesn't accept pattern
+                keys = await cache.raw("keys")
+        except Exception as e:  # pragma: no cover - defensive
+            logger.error(f"Failed to list keys for cache {name}: {e}")
+            return name, {}
+
+        if not keys:
+            return name, {}
+
+        decoded_keys = [k.decode() if isinstance(k, bytes) else k for k in keys]
+
+        try:
+            # Preferred: single round-trip to fetch all values
+            values = await cache.multi_get(decoded_keys)
+        except Exception:
+            # Fallback: parallel per-key fetches
+            values = await asyncio.gather(
+                *(cache.get(k) for k in decoded_keys),
+                return_exceptions=True,
+            )
+
+        cache_content: dict[str, Any] = {}
+        for key, value in zip(decoded_keys, values):
+            if isinstance(value, Exception):  # pragma: no cover - defensive
+                logger.error(f"Failed to retrieve {key} from {name}: {value}")
+            else:
+                cache_content[key] = value
+
+        return name, cache_content
+
+    results = await asyncio.gather(
+        *(fetch_cache(n) for n in ["default", "articles", "sentiment", "clusters"])
+    )
+    return {name: content for name, content in results}
+
 async def cache_health_check() -> dict:
     """Perform cache health check"""
     try:

@@ -28,7 +28,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 
 # ── local imports ────────────────────────────────────────────────────────
-from .cache import default_cache
+from .cache import default_cache, get_all_cached_data
 from .models import (
     APIResponse,
     Article,
@@ -160,6 +160,12 @@ async def debug_clear_cache():
     """Erase the cached article list manually."""
     await default_cache.delete("articles")
     return {"message": "cache cleared"}
+
+
+@debug.get("/cache/all")
+async def debug_get_all_cache():
+    """Return the full contents of all configured caches."""
+    return await get_all_cached_data()
 
 
 app.include_router(debug)
